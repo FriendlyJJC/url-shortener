@@ -41,13 +41,20 @@ This project is a simple API server written in Go. It provides functionality for
   }
   ```
 
-### `/v1/test`
+### `/v1/shorturl/get/:id`
 - **Method**: `GET`
-- **Description**: A test endpoint to verify the server is running.
+- **Description**: Retrieve stored URLS based of the given shorturl
+- **Request**: 
+```bash
+curl -X GET http://localhost:8080/v1/shorturl/get/hhrtpsd
+```  
 - **Response**:
-  ```
-  It works
-  ```
+```json
+ {
+  "longurl": "https://example.com",
+  "shorturl": "hhrtpsd",
+ }
+```
 
 ## Installation
 

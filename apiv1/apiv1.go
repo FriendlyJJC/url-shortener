@@ -36,7 +36,6 @@ func AddURL(w http.ResponseWriter, r *http.Request) {
 	}
 	generated_id := GenerateID()
 	ReqBody.ShortURL = &generated_id
-	fmt.Println(ReqBody)
 	w.WriteHeader(http.StatusOK)
 	res_text := fmt.Sprintf("The LongURl is %s and the ShortURl is %s", ReqBody.LongURL, *ReqBody.ShortURL)
 	w.Write([]byte(res_text))
@@ -53,9 +52,41 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
+func GetShortURL(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "No ID Parameter was given. Please pass it for example like this /shorturl/get?id=wwhrgf", http.StatusBadRequest)
+		return
+	}
+
+	var searchedItem *AddURLBody
+	for _, data := range ShortURLs.Data {
+		if *data.ShortURL == id {
+			searchedItem = &data
+			break
+		}
+	}
+
+	if searchedItem == nil {
+		http.Error(w, "Short URL not found", http.StatusNotFound)
+		return
+	}
+
+	res, err := json.Marshal(searchedItem)
+	if err != nil {
+		http.Error(w, "Something went wrong while encoding the response. Try again", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
+
 func APIHandleV1(w http.ResponseWriter, r *http.Request) {
 	v1_mux := http.NewServeMux()
 	v1_mux.HandleFunc("POST /shorturl/add", AddURL)
 	v1_mux.HandleFunc("GET /shorturl/get", GetAll)
+	v1_mux.HandleFunc("GET /shorturl/get/{id}", GetShortURL)
 	v1_mux.ServeHTTP(w, r)
 }
