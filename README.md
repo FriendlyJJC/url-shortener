@@ -67,7 +67,6 @@ curl -X DELETE http://localhost:8080/v1/shorturl/DELETE/hhrtpsd
 URL was correctly Deleted
 ```
 
-"URL was correctly" 
 ## Installation
 
 1. Clone the repository:
