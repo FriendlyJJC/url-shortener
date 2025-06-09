@@ -62,7 +62,7 @@ curl -X GET http://localhost:8080/v1/shorturl/get/hhrtpsd
 ```bash
 curl -X DELETE http://localhost:8080/v1/shorturl/DELETE/hhrtpsd
 ``` 
--**Response**:
+- **Response**:
 ```
 URL was correctly Deleted
 ```
