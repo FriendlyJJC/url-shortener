@@ -55,7 +55,19 @@ curl -X GET http://localhost:8080/v1/shorturl/get/hhrtpsd
   "shorturl": "hhrtpsd",
  }
 ```
+### `/v1/shorturl/delete/:id`
+- **Method**: `DELETE`
+- **Descritpion**: Deletes the URL based on the given shorturl
+- **Request**:
+```bash
+curl -X DELETE http://localhost:8080/v1/shorturl/DELETE/hhrtpsd
+``` 
+-**Response**:
+```
+URL was correctly Deleted
+```
 
+"URL was correctly" 
 ## Installation
 
 1. Clone the repository:
