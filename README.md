@@ -74,7 +74,12 @@ URL was correctly Deleted
 {
   "longurl": "https://example.site",
   "shorturl": "httpsas"
-} 
+}
+```
+- **Response**:
+```
+URL was successfully updated
+``` 
 ## Installation
 
 1. Clone the repository:
