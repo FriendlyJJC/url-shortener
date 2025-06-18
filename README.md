@@ -66,7 +66,15 @@ curl -X DELETE http://localhost:8080/v1/shorturl/DELETE/hhrtpsd
 ```
 URL was correctly Deleted
 ```
-
+### `/v1/shorturl/update/:id`
+- **Method**: `PUT`
+- **Description**: You Can Update the given Shorturl maximal length 7 or the longurl with the old shorturl as the parameter
+- **Example Item**:
+```json
+{
+  "longurl": "https://example.site",
+  "shorturl": "httpsas"
+} 
 ## Installation
 
 1. Clone the repository:
@@ -100,6 +108,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"longurl":"https://example
 api_server/
 ├── apiv1/
 │   ├── apiv1.go       # API version 1 implementation
+|   ├── types.go       # Contains the types for API version 1  
 ├── main.go            # Entry point for the server
 ├── go.mod             # Go module file
 └── README.md          # Project documentation
