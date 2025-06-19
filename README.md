@@ -120,7 +120,7 @@ api_server/
 ```
 
 ## Future Improvements
-
+- Adding automatic Testing to check if everythin works
 - Add database integration for persistent storage.
 - Implement authentication and authorization.
 - Add support for custom short URLs.
