@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -51,5 +52,29 @@ func TestGetUrl(t *testing.T) {
 	}
 	if req_2.StatusCode != 200 {
 		t.Errorf("The Response Code is not 200 as expected. actual: %d", req_2.StatusCode)
+	}
+}
+
+func TestUpdateUrl(t *testing.T) {
+	var TEST_SHORTURL string
+	//Create a Test that makes an HTTP Req to the Update Route to update specific Data from the existing one
+	req, req_error := http.Get(TEST_URL + "/shorturl/get")
+	if req_error != nil {
+		t.Fatalf("Something went wrong with the GET Req to get all IDS: %v", req_error)
+	}
+	var ResponseBody apiv1.ShortURLS
+	client := &http.Client{}
+	json.NewDecoder(req.Body).Decode(&ResponseBody)
+	TEST_SHORTURL = *ResponseBody.Data[0].ShortURL
+	new_shorturl := apiv1.GenerateID()
+	req_body := apiv1.AddURLBody{ShortURL: &new_shorturl}
+	json_body, _ := json.Marshal(req_body)
+	req_2, _ := http.NewRequest(http.MethodPut, TEST_URL+"/shorturl/update/"+TEST_SHORTURL, bytes.NewBuffer(json_body))
+	res, res_err := client.Do(req_2)
+	if res_err != nil {
+		t.Fatalf("Something went wrong with the Put Request: %v", res_err)
+	}
+	if res.StatusCode != 200 {
+		t.Errorf("The Response Code is not 200 as expected. actual: %d", res.StatusCode)
 	}
 }
