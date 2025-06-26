@@ -113,18 +113,25 @@ curl -X POST -H "Content-Type: application/json" -d '{"longurl":"https://example
 api_server/
 ├── apiv1/
 │   ├── apiv1.go       # API version 1 implementation
-|   ├── types.go       # Contains the types for API version 1  
+|   ├── types.go       # Contains the types for API version 1
+|–– db/
+    |–– db.go          # Will Contain DB Logic to Use in Main
+    |–– urls.db        # Serves as an SQL Lite DB
+|–– tests/
+    |–– apiv1_test.go  # TestFile API version 1  
 ├── main.go            # Entry point for the server
 ├── go.mod             # Go module file
+|–– makefile           # For automating building and testing
 └── README.md          # Project documentation
 ```
 
 ## Future Improvements
-- Adding automatic Testing to check if everythin works
-- Add database integration for persistent storage.
 - Implement authentication and authorization.
-- Add support for custom short URLs.
 - Improve error handling and logging.
+
+## Working On
+- Add database integration for persistent storage.
+- Adding automatic Testing to check if everything works
 
 ## License
 
