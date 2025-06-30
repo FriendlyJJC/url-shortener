@@ -110,19 +110,20 @@ curl -X POST -H "Content-Type: application/json" -d '{"longurl":"https://example
 ## Project Structure
 
 ```
-api_server/
-├── apiv1/
-│   ├── apiv1.go       # API version 1 implementation
-|   ├── types.go       # Contains the types for API version 1
-|–– db/
-    |–– db.go          # Will Contain DB Logic to Use in Main
-    |–– urls.db        # Serves as an SQL Lite DB
-|–– tests/
-    |–– apiv1_test.go  # TestFile API version 1  
-├── main.go            # Entry point for the server
-├── go.mod             # Go module file
-|–– makefile           # For automating building and testing
-└── README.md          # Project documentation
+./api_server/
+├── apiv1
+│   ├── apiv1.go     # Contains the Logic for the API v1
+│   └── types.go     # Contains the types for the API v1
+├── db
+│   ├── db.go        # Logic for the DB integration
+│   └── urls.db      # The Test DB to Save URLS
+├── go.mod           # Required GO File for Module
+├── go.sum           # Required GO File for installed Modules
+├── main.go          # Main Server with the imported Logic
+├── makefile         # makefile used for building and testing
+├── README.md        # Documentation
+└── tests
+    └── apiv1_test.go # TestFile to check the main API Routes
 ```
 
 ## Future Improvements

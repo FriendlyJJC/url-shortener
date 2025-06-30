@@ -6,11 +6,23 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+
+	"github.com/FriendlyJJC/api_server/db"
+	"gorm.io/gorm"
 )
 
 var (
 	ShortURLs ShortURLS
+	DB        gorm.DB
 )
+
+func init() {
+	database := db.InitializeDB()
+	if ok := db.Migrate(database); ok != true {
+		fmt.Println("Something went wrong with the Schema Migration")
+	}
+	DB = *database
+}
 
 func GenerateID() string {
 	const length int8 = 7
