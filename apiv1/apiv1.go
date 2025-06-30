@@ -56,9 +56,14 @@ func AddURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	generated_id := GenerateID()
-	ReqBody.ShortURL = &generated_id
+	//ReqBody.ShortURL = &generated_id
+	fmt.Printf("The Long is: %s the short is %s", ReqBody.LongURL, generated_id)
+	key := DB.Create(&db.ShortUrls{Longurl: ReqBody.LongURL, Shorturl: generated_id})
+	if key == nil {
+		http.Error(w, "Something went wrong with the Inserting Process of the Data", http.StatusInternalServerError)
+	}
 	w.WriteHeader(http.StatusOK)
-	res_text := fmt.Sprintf("The LongURl is %s and the ShortURl is %s", ReqBody.LongURL, *ReqBody.ShortURL)
+	res_text := fmt.Sprintf("The LongURl is %s and the ShortURl is %s", ReqBody.LongURL, generated_id)
 	w.Write([]byte(res_text))
 	ShortURLs.Data = append(ShortURLs.Data, ReqBody)
 }
