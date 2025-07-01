@@ -1,13 +1,25 @@
 app := ./api_server
 test_folder := ./tests/
 main := ./main.go
+main_folder := ./
 
 .PHONY:
+
+all: format vet tidy build run_and_test clean
+
+format:
+	gofmt $(main_folder)
+
+vet:
+	go vet $(main_folder)
+
+tidy:
+	go mod tidy
 
 build: 
 	go build -o $(app) $(main)
 
-run_and_test:
+run_and_test: build
 	./$(app) & \
 	PID=$$!; \
 	sleep 5; \

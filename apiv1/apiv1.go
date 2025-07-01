@@ -13,7 +13,7 @@ import (
 
 var (
 	ShortURLs ShortURLS
-	DB        gorm.DB
+	DB        *gorm.DB
 )
 
 func init() {
@@ -21,7 +21,7 @@ func init() {
 	if ok := db.Migrate(database); ok != true {
 		fmt.Println("Something went wrong with the Schema Migration")
 	}
-	DB = *database
+	DB = database
 }
 
 func GenerateID() string {

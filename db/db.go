@@ -12,7 +12,7 @@ type ShortUrls struct {
 }
 
 func InitializeDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("./db/urls.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("db/urls.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect to database")
 	}
