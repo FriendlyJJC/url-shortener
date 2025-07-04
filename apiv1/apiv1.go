@@ -1,10 +1,9 @@
 package apiv1
 
 import (
+	"crypto/rand"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 
 	"github.com/FriendlyJJC/api_server/db"
@@ -16,6 +15,19 @@ var (
 	DB        *gorm.DB
 )
 
+// Error Messages for HTTP Return
+const (
+	JSON_CONVERT_ERROR = "Something went wrong while converting to JSON. Please try again later"
+	DB_WRITE_ERROR     = "Something went wrong while writing to DB. Please try again later"
+	JSON_ENCODE_ERROR  = "JSON could not be encoded. Please try again later"
+	JSON_DECODE_ERROR  = "JSON could not be decoded. Please try again later"
+	NO_ENTRIES_ERROR   = "No Entries found in Database"
+	DB_ERROR           = "Something went wrong while interacting with the Database. Please try again later"
+	DB_DELETE_ERROR    = "Something went wrong while deleting from DB. Please try again later"
+	DB_UPDATE_ERROR    = "Something went wrong while updating the DB. Please try again later"
+)
+
+// Initialize DB Connection and store connection into a variable
 func init() {
 	database := db.InitializeDB()
 	if ok := db.Migrate(database); ok != true {
@@ -24,153 +36,147 @@ func init() {
 	DB = database
 }
 
-func GenerateID() string {
-	const length int8 = 7
-	id := make([]byte, length)
-	characters := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_?!*+&"
-	for i := 0; i < int(length); i++ {
-		id[i] = characters[rand.Intn(len(characters))]
+// Function that uses Crypto.Rand to randomly assert random bytes and return the byte slice
+func GenerateID() (id []byte, is_err bool) {
+	const length = 4
+	id = make([]byte, length)
+	_, err := rand.Read(id)
+	if err != nil {
+		return nil, true
 	}
-	return string(id)
-}
 
-func RemoveItem(arr []AddURLBody, index int) ([]AddURLBody, error) {
-	var urls []AddURLBody
-	if arr == nil {
-		return nil, errors.New("Given Array or Slice does not have elements")
-	}
-	for i, item := range arr {
-		if i != index {
-			urlbody := AddURLBody{ShortURL: item.ShortURL, LongURL: item.LongURL}
-			urls = append(urls, urlbody)
-		}
-	}
-	return urls, nil
+	return id, false
 }
 
 func AddURL(w http.ResponseWriter, r *http.Request) {
 	var ReqBody AddURLBody
 	err := json.NewDecoder(r.Body).Decode(&ReqBody)
 	if err != nil {
-		http.Error(w, "JSON could not be decoded, try again", http.StatusInternalServerError)
+		http.Error(w, JSON_DECODE_ERROR, http.StatusInternalServerError)
 		return
 	}
-	generated_id := GenerateID()
-	//ReqBody.ShortURL = &generated_id
-	fmt.Printf("The Long is: %s the short is %s", ReqBody.LongURL, generated_id)
-	key := DB.Create(&db.ShortUrls{Longurl: ReqBody.LongURL, Shorturl: generated_id})
-	if key == nil {
-		http.Error(w, "Something went wrong with the Inserting Process of the Data", http.StatusInternalServerError)
+	generated_id, _ := GenerateID()
+	new_url := db.ShortUrls{Longurl: ReqBody.LongURL, Shorturl: fmt.Sprintf("%x", generated_id)}
+	result := DB.Exec("INSERT INTO short_urls (longurl, shorturl) VALUES (?, ?)", new_url.Longurl, new_url.Shorturl)
+	if result.Error != nil {
+		http.Error(w, DB_WRITE_ERROR, http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
-	res_text := fmt.Sprintf("The LongURl is %s and the ShortURl is %s", ReqBody.LongURL, generated_id)
+	res_text := fmt.Sprintf("LongURL: %s and ShortURL: %v were added", ReqBody.LongURL, fmt.Sprintf("%x", generated_id))
 	w.Write([]byte(res_text))
-	ShortURLs.Data = append(ShortURLs.Data, ReqBody)
 }
 
 func GetAll(w http.ResponseWriter, r *http.Request) {
-	res, err := json.Marshal(ShortURLs)
-	if err != nil {
-		http.Error(w, "Something went Wrong while Encoding the Response. Try again", http.StatusInternalServerError)
+	var urls []db.ShortUrls
+	DB.Raw("SELECT * FROM short_urls").Scan(&urls)
+	if len(urls) < 1 {
+		http.Error(w, NO_ENTRIES_ERROR, http.StatusNotFound)
+		return
+	}
+	res_json, json_err := json.Marshal(urls)
+	if json_err != nil {
+		http.Error(w, JSON_CONVERT_ERROR, http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	w.Write(res_json)
 }
 
 func GetShortURL(w http.ResponseWriter, r *http.Request) {
+	var url db.ShortUrls
 	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "No ID Parameter was given. Please pass it for example like this /shorturl/get/wwhrgf", http.StatusBadRequest)
+	if result := DB.Exec("SELECT * FROM short_urls WHERE shorturl = ?", id).Scan(&url); result.Error != nil {
+		error_message := fmt.Sprintf("The URL with the ID: %s, was not found", id)
+		http.Error(w, error_message, http.StatusNotFound)
 		return
 	}
-
-	var searchedItem *AddURLBody
-	for _, data := range ShortURLs.Data {
-		if *data.ShortURL == id {
-			searchedItem = &data
-			break
-		}
-	}
-
-	if searchedItem == nil {
-		http.Error(w, "Short URL not found", http.StatusNotFound)
+	json_res, json_err := json.Marshal(url)
+	if json_err != nil {
+		http.Error(w, JSON_CONVERT_ERROR, http.StatusInternalServerError)
 		return
 	}
-
-	res, err := json.Marshal(searchedItem)
-	if err != nil {
-		http.Error(w, "Something went wrong while encoding the response. Try again", http.StatusInternalServerError)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	w.Write(json_res)
 }
 
 func DeleteURL(w http.ResponseWriter, r *http.Request) {
-	itemIndex := 0
 	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "No ID Parameter was given. Please pass it for example like this /shorturl/get/wwhrgf", http.StatusBadRequest)
+	tx := DB.Begin()
+	var url db.ShortUrls
+	search_result := DB.Exec("SELECT * FROM short_urls WHERE shorturl = ?", id).Scan(&url)
+	if search_result.Error != nil {
+		http.Error(w, DB_ERROR, http.StatusInternalServerError)
 		return
 	}
-
-	for i, item := range ShortURLs.Data {
-		if *item.ShortURL == id {
-			itemIndex = i
+	if url.Shorturl != "" || url.Longurl != "" {
+		delete_result := tx.Exec("DELETE FROM short_urls WHERE shorturl = ?", id)
+		if delete_result.Error != nil {
+			tx.Rollback()
+			http.Error(w, DB_DELETE_ERROR, http.StatusInternalServerError)
+			return
 		}
+		tx.Commit()
+		res_text := fmt.Sprintf("URL with Shorturl %v was deleted", id)
+		w.WriteHeader(200)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(res_text))
 	}
-	updatedURL, err := RemoveItem(ShortURLs.Data, itemIndex)
-	if err != nil {
-		res := fmt.Sprintf("Error Occurred: %v", err)
-		http.Error(w, res, http.StatusInternalServerError)
-	}
-	ShortURLs.Data = updatedURL
-	w.WriteHeader(http.StatusOK)
-	res := fmt.Sprintf("URL was correctly deleted")
-	w.Write([]byte(res))
 }
 
 func UpdateURL(w http.ResponseWriter, r *http.Request) {
-	var userBody AddURLBody
-	id := r.PathValue("id") // Correctly retrieve the "id" parameter from the query string
-
-	if id == "" {
-		http.Error(w, "No ID Parameter was given. Please pass it for example like this /shorturl/update?id=wwhrgf", http.StatusBadRequest)
+	var reqBody AddURLBody
+	var searched_url db.ShortUrls
+	tx := DB.Begin()
+	id := r.PathValue("id")
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, JSON_DECODE_ERROR, http.StatusInternalServerError)
 		return
 	}
-
-	err := json.NewDecoder(r.Body).Decode(&userBody)
-	if err != nil {
-		http.Error(w, "JSON could not be decoded, try again", http.StatusBadRequest)
+	search_result := DB.Exec("SELECT * FROM short_urls WHERE shorturl = ?", id).Scan(&searched_url)
+	if search_result.Error != nil {
+		http.Error(w, DB_ERROR, http.StatusInternalServerError)
 		return
 	}
-
-	var url_item *AddURLBody
-	for i := range ShortURLs.Data {
-		if *ShortURLs.Data[i].ShortURL == id {
-			url_item = &ShortURLs.Data[i] // Update the reference directly in the slice
-			break
+	//checks if both inputs are not empty
+	if *reqBody.ShortURL != "" || reqBody.LongURL != "" {
+		//if Shorturl is not empty, longer than 7 characters and is not the same as already
+		if *reqBody.ShortURL != "" && len(*reqBody.ShortURL) < 12 && *reqBody.ShortURL != searched_url.Shorturl {
+			update_shorturl := tx.Exec("UPDATE short_urls SET shorturl = ?", *reqBody.ShortURL)
+			if update_shorturl.Error != nil {
+				tx.Rollback()
+				http.Error(w, DB_UPDATE_ERROR, http.StatusInternalServerError)
+				return
+			}
+			tx.Commit()
+			res_text := fmt.Sprintf("The Shorturl was succesfully updated to %v", *reqBody.ShortURL)
+			w.Header().Set("Content-Type", "application")
+			w.WriteHeader(200)
+			w.Write([]byte(res_text))
 		}
-	}
+		//if Longurl is not empty and not the same as already
+		if reqBody.LongURL != "" && reqBody.LongURL != searched_url.Longurl {
+			update_longurl := tx.Exec("UPDATE short_urls SET shorturl = ?", *reqBody.ShortURL)
+			if update_longurl.Error != nil {
+				tx.Rollback()
+				http.Error(w, DB_UPDATE_ERROR, http.StatusInternalServerError)
+				return
+			}
+			tx.Commit()
+			res_text := fmt.Sprintf("The Longurl was succesfully updated to %v", reqBody.LongURL)
+			w.Header().Set("Content-Type", "application")
+			w.WriteHeader(200)
+			w.Write([]byte(res_text))
+		}
+		tx.Rollback()
+		http.Error(w, "The Data does not fit the requirements. Please check the Docs for further Information", http.StatusNotAcceptable)
+		return
 
-	if url_item == nil {
-		res := fmt.Sprintf("ShortURL with ID %v does not exist. Please use another id", id)
-		http.Error(w, res, http.StatusNotFound)
+	} else {
+		http.Error(w, "No Data provided", http.StatusNoContent)
 		return
 	}
-
-	if len(userBody.LongURL) > 0 {
-		url_item.LongURL = userBody.LongURL
-	}
-	if userBody.ShortURL != nil && len(*userBody.ShortURL) > 0 && len(*userBody.ShortURL) < 8 {
-		url_item.ShortURL = userBody.ShortURL
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("URL was successfully updated"))
 }
 
 func APIHandleV1(w http.ResponseWriter, r *http.Request) {

@@ -6,9 +6,8 @@ import (
 )
 
 type ShortUrls struct {
-	gorm.Model
 	Longurl  string
-	Shorturl string
+	Shorturl string `gorm:"primaryKey"`
 }
 
 func InitializeDB() *gorm.DB {
