@@ -2,6 +2,7 @@ app := ./api_server
 test_folder := ./tests/
 main := ./main.go
 main_folder := ./
+DB := ./db/urls.db
 
 .PHONY:
 
@@ -28,3 +29,6 @@ run_and_test: build
 
 clean:
 	rm -f $(app)
+
+clean_db:
+	rm -f $(DB) 
